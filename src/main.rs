@@ -1,6 +1,9 @@
+use futures_util::StreamExt;
 use glam::Vec2;
 use serde::{Deserialize, Serialize};
-use warp::ws::WebSocket;
+// use tokio_stream::StreamExt;
+use tokio::sync::mpsc;
+use warp::ws::{Message, WebSocket};
 use warp::Filter;
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -29,7 +32,36 @@ pub enum ClientMessage {
 }
 
 async fn user_connected(ws: WebSocket) {
-    unimplemented!();
+    use futures_util::StreamExt;
+
+    let (ws_sender, mut ws_receiver) = ws.split();
+
+    let send_channel = create_send_channel(ws_sender);
+
+    let my_id = send_welcome(&send_channel).await;
+
+    log::debug!("new user connected: {}", my_id);
+
+    while let Some(result) = ws_receiver.next().await {
+        let msg = match result {
+            Ok(msg) => msg,
+            Err(e) => {
+                log::warn!("websocket receive error: '{};", e);
+                break;
+            }
+        };
+        log::debug!("user sent message: {:?}", msg);
+    }
+
+    log::debug!("user disconnected: {}", my_id);
+}
+
+fn create_send_channel(ws_sender: futures_util::stream::SplitSink<WebSocket, Message>) -> () {
+    unimplemented!()
+}
+
+async fn send_welcome(out: &()) -> usize {
+    unimplemented!()
 }
 
 #[tokio::main]
